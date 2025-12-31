@@ -4,8 +4,11 @@ import { useState, useRef } from "react";
 import { ArrowUp, X, ImageIcon, Copy, Check } from "lucide-react";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
+import { useTheme } from "@/components/theme-context";
 
 export default function ImageAnalyzer() {
+  const { theme } = useTheme();
+  const isLight = theme === "light";
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [question, setQuestion] = useState("");
@@ -15,10 +18,26 @@ export default function ImageAnalyzer() {
   const [copied, setCopied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const copyToClipboard = async (text: string) => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        // Fallback for mobile/non-secure contexts
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
   };
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -109,13 +128,15 @@ export default function ImageAnalyzer() {
   }
 
   return (
-    <main className="min-h-screen bg-[#0a0e1a] flex flex-col overflow-x-hidden">
+    <main className={`min-h-screen flex flex-col overflow-x-hidden transition-colors duration-300 ${
+      isLight ? "bg-gradient-to-b from-[#e8dfd4] via-[#f5f0e8] to-[#fef3e2]" : "bg-[#0a0e1a]"
+    }`}>
       <Navbar />
       <div className="flex-1 pt-20 pb-4 px-4 flex flex-col max-w-4xl mx-auto w-full overflow-x-hidden">
         {messages.length === 0 && !isLoading ? (
           <div className="flex-1 flex flex-col items-center justify-center">
-            <h1 className="text-3xl md:text-4xl font-semibold text-white mb-4 text-center">Upload an image to analyze</h1>
-            <p className="text-gray-400 text-center">I'll describe what I see in detail</p>
+            <h1 className={`text-3xl md:text-4xl font-semibold mb-4 text-center ${isLight ? "text-gray-900" : "text-white"}`}>Upload an image to analyze</h1>
+            <p className={`text-center ${isLight ? "text-gray-600" : "text-gray-400"}`}>I'll describe what I see in detail</p>
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto mb-4 space-y-4">
@@ -134,7 +155,9 @@ export default function ImageAnalyzer() {
                 
                 {msg.type === "question" && (
                   <div className="flex justify-end">
-                    <div className="bg-[#2a3548] text-white px-4 py-2 rounded-2xl max-w-[80%]">
+                    <div className={`px-4 py-2 rounded-2xl max-w-[80%] ${
+                      isLight ? "bg-orange-100 text-gray-900" : "bg-[#2a3548] text-white"
+                    }`}>
                       {msg.content}
                     </div>
                   </div>
@@ -142,16 +165,20 @@ export default function ImageAnalyzer() {
                 
                 {(msg.type === "analysis" || msg.type === "answer") && (
                   <div className="flex justify-start">
-                    <div className="bg-[#0f1629] border border-[#1e293b] rounded-2xl p-5 max-w-full w-full">
+                    <div className={`rounded-2xl p-5 max-w-full w-full border ${
+                      isLight ? "bg-white border-gray-200" : "bg-[#0f1629] border-[#1e293b]"
+                    }`}>
                       <div className="flex justify-end mb-2">
                         <button
                           onClick={() => copyToClipboard(msg.content)}
-                          className="text-gray-400 hover:text-white transition p-1"
+                          className={`p-1 transition ${isLight ? "text-gray-400 hover:text-gray-900" : "text-gray-400 hover:text-white"}`}
                         >
                           {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                         </button>
                       </div>
-                      <div className="whitespace-pre-wrap text-gray-300 leading-relaxed prose prose-invert max-w-none">
+                      <div className={`whitespace-pre-wrap leading-relaxed prose max-w-none ${
+                        isLight ? "text-gray-700 prose-gray" : "text-gray-300 prose-invert"
+                      }`}>
                         {msg.content}
                       </div>
                     </div>
@@ -168,7 +195,9 @@ export default function ImageAnalyzer() {
 
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-[#0f1629] border border-[#1e293b] rounded-2xl p-5">
+                <div className={`rounded-2xl p-5 border ${
+                  isLight ? "bg-white border-gray-200" : "bg-[#0f1629] border-[#1e293b]"
+                }`}>
                   <div className="flex gap-1">
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: "0.1s"}}></div>
@@ -182,18 +211,24 @@ export default function ImageAnalyzer() {
 
         <div className="w-full">
           <input type="file" ref={fileInputRef} accept="image/*" onChange={handleFileChange} className="hidden" />
-          <div className="bg-[#0f1629] border border-[#1e293b] rounded-full px-4 py-2">
+          <div className={`rounded-2xl sm:rounded-full px-3 sm:px-4 py-2 border transition-colors duration-300 ${
+            isLight ? "bg-white border-gray-200" : "bg-[#0f1629] border-[#1e293b]"
+          }`}>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-2 px-3 py-1.5 bg-[#1a2744] rounded-full hover:bg-[#243352] transition text-sm"
+                className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-full transition text-xs sm:text-sm ${
+                  isLight ? "bg-gray-100 hover:bg-gray-200" : "bg-[#1a2744] hover:bg-[#243352]"
+                }`}
               >
-                <ImageIcon className="w-4 h-4 text-gray-400" />
-                <span className="text-gray-300 text-sm">{file ? "Change" : "Upload"}</span>
+                <ImageIcon className={`w-3 h-3 sm:w-4 sm:h-4 ${isLight ? "text-gray-500" : "text-gray-400"}`} />
+                <span className={`${isLight ? "text-gray-700" : "text-gray-300"}`}>{file ? "Change" : "Upload"}</span>
               </button>
 
               <input
-                className="flex-1 bg-transparent py-2 px-2 outline-none text-white placeholder-gray-500"
+                className={`flex-1 min-w-0 bg-transparent py-2 px-1 sm:px-2 outline-none text-sm sm:text-base ${
+                  isLight ? "text-gray-900 placeholder-gray-400" : "text-white placeholder-gray-500"
+                }`}
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -204,11 +239,13 @@ export default function ImageAnalyzer() {
               <button
                 onClick={askQuestion}
                 disabled={isLoading || !analyzed || !question.trim()}
-                className={`p-2 rounded-full transition ${
-                  analyzed && question.trim() ? "bg-[#5865F2] text-white hover:bg-[#4752c4]" : "bg-[#1a2744] text-gray-600"
+                className={`p-1.5 sm:p-2 rounded-full transition flex-shrink-0 ${
+                  analyzed && question.trim() 
+                    ? isLight ? "bg-orange-500 text-white hover:bg-orange-600" : "bg-[#5865F2] text-white hover:bg-[#4752c4]" 
+                    : isLight ? "bg-gray-100 text-gray-400" : "bg-[#1a2744] text-gray-600"
                 } disabled:cursor-not-allowed`}
               >
-                <ArrowUp className="w-5 h-5" />
+                <ArrowUp className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
           </div>

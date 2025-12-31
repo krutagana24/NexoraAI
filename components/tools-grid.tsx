@@ -18,21 +18,37 @@ const bottomTools = [
 
 export default function ToolsGrid() {
   return (
-    <div id="tools" className="px-6 py-10 max-w-6xl mx-auto scroll-mt-20">
+    <div id="tools" className="px-4 sm:px-6 py-10 max-w-6xl mx-auto scroll-mt-20">
       {/* Top Row - 4 tools */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         {topTools.map((item) => (
           <ToolCard key={item.id} {...item} />
         ))}
       </div>
       
-      {/* Bottom Row - 3 tools centered with same card width */}
-      <div className="flex flex-col sm:flex-row justify-center gap-6">
-        {bottomTools.map((item) => (
-          <div key={item.id} className="w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(25%-1.125rem)]">
-            <ToolCard {...item} />
+      {/* Bottom Row - 3 tools centered below */}
+      <div className="mt-3 sm:mt-6">
+        {/* Mobile layout */}
+        <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:hidden">
+          {bottomTools.map((item, index) => (
+            <div key={item.id} className={index === 2 ? "col-span-2 mx-auto w-full max-w-[calc(50%-0.375rem)]" : ""}>
+              <ToolCard {...item} />
+            </div>
+          ))}
+        </div>
+        
+        {/* Desktop layout - 3 cards centered */}
+        <div className="hidden lg:flex justify-center gap-6">
+          <div className="w-[calc(25%-1.125rem)]">
+            <ToolCard {...bottomTools[0]} />
           </div>
-        ))}
+          <div className="w-[calc(25%-1.125rem)]">
+            <ToolCard {...bottomTools[1]} />
+          </div>
+          <div className="w-[calc(25%-1.125rem)]">
+            <ToolCard {...bottomTools[2]} />
+          </div>
+        </div>
       </div>
     </div>
   )
