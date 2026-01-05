@@ -3,6 +3,9 @@ import GoogleProvider from "next-auth/providers/google";
 import { connectDB } from "@/lib/db";
 import User from "@/lib/models/User";
 
+const useSecureCookies = process.env.NODE_ENV === "production";
+const cookiePrefix = useSecureCookies ? "__Secure-" : "";
+
 const handler = NextAuth({
   providers: [
     GoogleProvider({
@@ -10,15 +13,38 @@ const handler = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
     }),
   ],
+  session: {
+    strategy: "jwt",
+    // Very short maxAge - session will be validated but cookie controls persistence
+    maxAge: 24 * 60 * 60, // 24 hours max if browser stays open
+  },
   cookies: {
     sessionToken: {
-      name: `next-auth.session-token`,
+      name: `${cookiePrefix}next-auth.session-token`,
       options: {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: process.env.NODE_ENV === "production",
-        // No maxAge = session cookie (expires when browser closes)
+        secure: useSecureCookies,
+        // No maxAge means session cookie - expires when browser closes
+      },
+    },
+    callbackUrl: {
+      name: `${cookiePrefix}next-auth.callback-url`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
+      },
+    },
+    csrfToken: {
+      name: `${cookiePrefix}next-auth.csrf-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
       },
     },
   },
@@ -28,11 +54,9 @@ const handler = NextAuth({
         try {
           await connectDB();
           
-          // Check if user exists
           const existingUser = await User.findOne({ email: user.email });
           
           if (!existingUser) {
-            // Create new user in database
             await User.create({
               name: user.name,
               email: user.email,
@@ -43,15 +67,15 @@ const handler = NextAuth({
           return true;
         } catch (error) {
           console.error("Error saving user to database:", error);
-          return true; // Still allow sign in even if DB fails
+          return true;
         }
       }
       return true;
     },
-    async redirect({ url, baseUrl }) {
+    async redirect({ baseUrl }) {
       return baseUrl;
     },
-    async session({ session, token }) {
+    async session({ session }) {
       return session;
     },
   },
