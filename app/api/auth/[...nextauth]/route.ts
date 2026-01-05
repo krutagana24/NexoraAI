@@ -10,6 +10,18 @@ const handler = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
     }),
   ],
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+        // No maxAge = session cookie (expires when browser closes)
+      },
+    },
+  },
   callbacks: {
     async signIn({ user, account }) {
       if (account?.provider === "google") {
